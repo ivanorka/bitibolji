@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { headers } from "next/headers";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -12,33 +13,39 @@ const geistMono = Geist_Mono({
   subsets: ["latin", "latin-ext"],
 });
 
-const metadataBase = new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000");
+export async function generateMetadata(): Promise<Metadata> {
+  const requestHeaders = await headers();
+  const forwardedHost = requestHeaders.get("x-forwarded-host")?.split(",")[0]?.trim();
+  const host = forwardedHost || requestHeaders.get("host") || "localhost:3000";
+  const protocol = requestHeaders.get("x-forwarded-proto")?.split(",")[0]?.trim() || (host.startsWith("localhost") ? "http" : "https");
+  const metadataBase = new URL(`${protocol}://${host}`);
 
-export const metadata: Metadata = {
-  metadataBase,
-  title: {
-    default: "Biti bolji by Vladimir",
-    template: "%s | Biti bolji",
-  },
-  description:
-    "Znanje, iskustvo i stvarne prilike za mlade — projekt Vladimira Mihajlovića i Udruge Biti Bolji iz Osijeka.",
-  keywords: ["Biti bolji", "Vladimir Mihajlović", "mladi", "poduzetništvo", "Osijek", "obrazovanje"],
-  authors: [{ name: "Vladimir Mihajlović" }],
-  openGraph: {
-    type: "website",
-    locale: "hr_HR",
-    siteName: "Biti bolji by Vladimir",
-    title: "Biti bolji — ideje koje mijenjaju budućnost",
-    description: "Spajamo mlade, škole i poduzetnike kroz znanje, iskustvo i stvarne prilike.",
-    images: [{ url: "/og.png", width: 1731, height: 909, alt: "Biti bolji — ideje koje mijenjaju budućnost" }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Biti bolji — ideje koje mijenjaju budućnost",
-    description: "Spajamo mlade, škole i poduzetnike kroz znanje, iskustvo i stvarne prilike.",
-    images: ["/og.png"],
-  },
-};
+  return {
+    metadataBase,
+    title: {
+      default: "Biti bolji by Vladimir",
+      template: "%s | Biti bolji",
+    },
+    description:
+      "Znanje, iskustvo i stvarne prilike za mlade — projekt Vladimira Mihajlovića i Udruge Biti Bolji iz Osijeka.",
+    keywords: ["Biti bolji", "Vladimir Mihajlović", "mladi", "poduzetništvo", "Osijek", "obrazovanje"],
+    authors: [{ name: "Vladimir Mihajlović" }],
+    openGraph: {
+      type: "website",
+      locale: "hr_HR",
+      siteName: "Biti bolji by Vladimir",
+      title: "Biti bolji — ideje koje mijenjaju budućnost",
+      description: "Spajamo mlade, škole i poduzetnike kroz znanje, iskustvo i stvarne prilike.",
+      images: [{ url: "/og.png", width: 1731, height: 909, alt: "Biti bolji — ideje koje mijenjaju budućnost" }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "Biti bolji — ideje koje mijenjaju budućnost",
+      description: "Spajamo mlade, škole i poduzetnike kroz znanje, iskustvo i stvarne prilike.",
+      images: ["/og.png"],
+    },
+  };
+}
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
