@@ -6,12 +6,16 @@ import { SiteHeader } from "@/components/SiteHeader";
 export const metadata: Metadata = {
   title: "Vlado i priča Biti Bolji",
   description: "Upoznajte Vladimira Mihajlovića i priču projekta koji više od trinaest godina povezuje mlade sa stvarnim svijetom.",
+  alternates: {
+    canonical: "/o-nama",
+    languages: { "hr-HR": "/o-nama", "en-US": "/en/about" },
+  },
 };
 
 export default function AboutPage() {
   return (
     <>
-      <SiteHeader />
+      <SiteHeader languageHref="/en/about" />
       <main>
         <section className="about-hero section-pad">
           <div className="site-shell about-hero-grid">
@@ -85,4 +89,3 @@ export default function AboutPage() {
     </>
   );
 }
-

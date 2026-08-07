@@ -4,24 +4,30 @@ import { notFound } from "next/navigation";
 import { ArticleCard } from "@/components/ArticleCard";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
-import { articles, formatDate, getArticle, getRelatedArticles, getTheme } from "@/lib/articles";
+import {
+  englishArticles,
+  formatDate,
+  getEnglishArticle,
+  getEnglishRelatedArticles,
+  getTheme,
+} from "@/lib/articles";
 
 type PageProps = { params: Promise<{ slug: string }> };
 
 export function generateStaticParams() {
-  return articles.map((article) => ({ slug: article.slug }));
+  return englishArticles.map((article) => ({ slug: article.slug }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const article = getArticle(slug);
+  const article = getEnglishArticle(slug);
   if (!article) return {};
 
   return {
     title: article.title,
     description: article.description,
     alternates: {
-      canonical: `/blog/${article.slug}`,
+      canonical: `/en/blog/${article.slug}`,
       languages: { "hr-HR": `/blog/${article.slug}`, "en-US": `/en/blog/${article.slug}` },
     },
     openGraph: {
@@ -29,33 +35,34 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description: article.description,
       type: "article",
       publishedTime: article.date,
+      locale: "en_US",
       images: [{ url: article.featuredImage, alt: article.featuredImageAlt }],
     },
   };
 }
 
-export default async function ArticlePage({ params }: PageProps) {
+export default async function EnglishArticlePage({ params }: PageProps) {
   const { slug } = await params;
-  const article = getArticle(slug);
+  const article = getEnglishArticle(slug);
   if (!article) notFound();
-  const related = getRelatedArticles(article);
+  const related = getEnglishRelatedArticles(article);
 
   return (
-    <>
-      <SiteHeader languageHref={`/en/blog/${article.slug}`} />
+    <div lang="en">
+      <SiteHeader locale="en" languageHref={`/blog/${article.slug}`} />
       <main>
         <article>
           <header className="article-hero">
             <div className="site-shell article-hero-inner">
-              <Link href="/blog" className="back-link">← Sve priče</Link>
-              <span className="article-theme article-theme--static">{getTheme(article)}</span>
+              <Link href="/en/blog" className="back-link">← All stories</Link>
+              <span className="article-theme article-theme--static">{getTheme(article, "en")}</span>
               <h1>{article.title}</h1>
               <p className="article-deck">{article.description}</p>
               <div className="article-byline">
                 <div className="byline-avatar">VM</div>
                 <div>
                   <strong>Vladimir Mihajlović</strong>
-                  <span>{formatDate(article.date)} · {article.readTime} min čitanja</span>
+                  <span>{formatDate(article.date, "en")} · {article.readTime} min read</span>
                 </div>
               </div>
             </div>
@@ -65,19 +72,23 @@ export default async function ArticlePage({ params }: PageProps) {
           </div>
           <div className="site-shell article-layout">
             <aside className="article-aside">
-              <span>Podijeli ideju</span>
-              <a href={`mailto:?subject=${encodeURIComponent(article.title)}`} aria-label="Pošalji članak e-poštom">E-pošta ↗</a>
-              <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(`https://poduzetnik.biz/biti-bolji/${article.slug}/`)}`} target="_blank" rel="noreferrer">Facebook ↗</a>
+              <span>Share the idea</span>
+              <a href={`mailto:?subject=${encodeURIComponent(article.title)}`} aria-label="Send article by email">Email ↗</a>
+              <a
+                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(`https://bitibolji.orka.solutions/en/blog/${article.slug}`)}`}
+                target="_blank"
+                rel="noreferrer"
+              >Facebook ↗</a>
             </aside>
             <div>
               <div className="article-content" dangerouslySetInnerHTML={{ __html: article.content }} />
               <div className="source-note">
-                <span>Arhivska bilješka</span>
+                <span>Archive note</span>
                 <p>
-                  Ovaj tekst je prenesen iz kategorije Biti bolji na portalu Poduzetnik.
-                  Izvorni potpis: <strong>{article.sourceAuthor}</strong>.
+                  This article was transferred from the Biti Bolji category on the Poduzetnik portal.
+                  Original byline: <strong>{article.sourceAuthor}</strong>.
                 </p>
-                <a href={article.sourceUrl} target="_blank" rel="noreferrer">Pogledaj izvornik ↗</a>
+                <a href={article.sourceUrl} target="_blank" rel="noreferrer">View the original in Croatian ↗</a>
               </div>
             </div>
           </div>
@@ -86,16 +97,16 @@ export default async function ArticlePage({ params }: PageProps) {
         <section className="related-section section-pad">
           <div className="site-shell">
             <div className="section-heading section-heading--line">
-              <div><p className="eyebrow"><span /> Nastavi čitati</p><h2>Slične <em>priče.</em></h2></div>
-              <Link href="/blog" className="outline-link">Sve priče <span>→</span></Link>
+              <div><p className="eyebrow"><span /> Keep reading</p><h2>Related <em>stories.</em></h2></div>
+              <Link href="/en/blog" className="outline-link">All stories <span>→</span></Link>
             </div>
             <div className="related-grid">
-              {related.map((item) => <ArticleCard article={item} key={item.slug} />)}
+              {related.map((item) => <ArticleCard article={item} locale="en" key={item.slug} />)}
             </div>
           </div>
         </section>
       </main>
-      <SiteFooter />
-    </>
+      <SiteFooter locale="en" />
+    </div>
   );
 }

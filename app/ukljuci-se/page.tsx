@@ -6,12 +6,16 @@ import { SiteHeader } from "@/components/SiteHeader";
 export const metadata: Metadata = {
   title: "Uključi se",
   description: "Postanite mentor, uključite školu, otvorite vrata svoje tvrtke ili podržite programe Udruge Biti Bolji.",
+  alternates: {
+    canonical: "/ukljuci-se",
+    languages: { "hr-HR": "/ukljuci-se", "en-US": "/en/get-involved" },
+  },
 };
 
 export default function JoinPage() {
   return (
     <>
-      <SiteHeader inverted />
+      <SiteHeader inverted languageHref="/en/get-involved" />
       <main className="join-page">
         <section className="join-hero section-pad">
           <div className="site-shell join-hero-grid">

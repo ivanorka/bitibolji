@@ -116,6 +116,19 @@ a:focus-visible {
 .desktop-nav a::after { content: ""; display: block; width: 0; height: 2px; margin-top: 0.2rem; background: currentColor; transition: width 180ms ease; }
 .desktop-nav a:hover::after { width: 100%; }
 
+.desktop-nav .language-switch {
+  min-width: 2.45rem;
+  padding: 0.38rem 0.55rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  text-align: center;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+}
+.desktop-nav .language-switch::after { display: none; }
+.desktop-nav .language-switch:hover { background: var(--ink); color: var(--white); }
+.site-header--inverted .desktop-nav .language-switch:hover { background: var(--lime); color: var(--ink); }
+
 .header-cta {
   padding: 0.76rem 1rem;
   border: 1px solid currentColor;

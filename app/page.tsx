@@ -9,6 +9,10 @@ export const metadata: Metadata = {
   title: "Biti bolji — ideje koje mijenjaju budućnost",
   description:
     "Projekt Vladimira Mihajlovića koji povezuje mlade, škole i poduzetnike kroz znanje, iskustvo i stvarne prilike.",
+  alternates: {
+    canonical: "/",
+    languages: { "hr-HR": "/", "en-US": "/en" },
+  },
 };
 
 const latest = articles.slice(0, 3);
@@ -158,4 +162,3 @@ export default function Home() {
     </>
   );
 }
-
