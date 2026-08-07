@@ -36,7 +36,7 @@ export function ContactModal() {
   return (
     <>
       <button className="button button--dark contact-button" type="button" onClick={openModal}>
-        Pošalji poruku <span aria-hidden="true">→</span>
+        Pošalji email poruku <span aria-hidden="true">→</span>
       </button>
 
       <dialog

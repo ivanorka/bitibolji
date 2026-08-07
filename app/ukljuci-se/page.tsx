@@ -43,7 +43,6 @@ export default function JoinPage() {
               <p>Javi se izravno. Najbolje suradnje često počinju kratkom porukom i konkretnim prijedlogom.</p>
             </div>
             <div className="contact-card">
-              <div><span>Kontakt</span><strong>Pošalji Vladi kratku poruku</strong></div>
               <div><span>Telefon</span><a href="tel:+385917675999">+385 91 767 5999</a></div>
               <div><span>Adresa</span><strong>Stonska 14, Osijek</strong></div>
               <ContactModal />
