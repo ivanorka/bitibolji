@@ -41,6 +41,18 @@ test("server renders blog archive with complete archive count", async () => {
   assert.match(html, /Predstava/);
 });
 
+test("contact page renders an email-free contact modal", async () => {
+  const response = await render("/ukljuci-se");
+  assert.equal(response.status, 200);
+
+  const html = await response.text();
+  assert.match(html, /Pošalji Vladi kratku poruku/);
+  assert.match(html, /Ne trebaš upisivati svoju e-mail adresu/);
+  assert.match(html, /Ime i prezime/);
+  assert.match(html, /Pripremi e-mail/);
+  assert.doesNotMatch(html, /type=["']email["']/i);
+});
+
 test("content migration contains every article and localizes all images", async () => {
   const manifest = JSON.parse(await readFile(new URL("../content/articles.json", import.meta.url), "utf8"));
   assert.equal(manifest.articleCount, 99);

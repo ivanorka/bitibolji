@@ -32,7 +32,7 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-body, button, input { font: inherit; }
+body, button, input, select, textarea { font: inherit; }
 
 img { display: block; max-width: 100%; }
 
@@ -42,6 +42,8 @@ button, summary, a { -webkit-tap-highlight-color: transparent; }
 
 button:focus-visible,
 input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
 summary:focus-visible,
 a:focus-visible {
   outline: 3px solid var(--coral);
@@ -430,6 +432,24 @@ a:focus-visible {
 .contact-card span { color: var(--muted); font-size: .65rem; text-transform: uppercase; letter-spacing: .12em; }
 .contact-card a, .contact-card strong { font-size: 1.15rem; }
 .contact-button { width: 100%; margin-top: 1.5rem; }
+.contact-modal { width: min(100% - 2rem, 48rem); max-height: min(90vh, 52rem); margin: auto; padding: 0; border: 0; border-radius: 1.25rem; background: var(--paper); color: var(--ink); box-shadow: 0 30px 100px rgba(8, 15, 42, .34); overflow: auto; }
+.contact-modal::backdrop { background: rgba(10, 17, 39, .76); backdrop-filter: blur(8px); }
+.contact-modal-inner { position: relative; padding: clamp(1.5rem, 5vw, 3.5rem); }
+.contact-modal-close { position: absolute; top: 1rem; right: 1rem; width: 2.8rem; aspect-ratio: 1; display: grid; place-items: center; border: 1px solid var(--ink); border-radius: 50%; background: transparent; color: var(--ink); font-size: 1.65rem; line-height: 1; cursor: pointer; }
+.contact-modal-heading { padding-right: 3rem; }
+.contact-modal-heading h2 { max-width: 35rem; margin: 1rem 0; font-size: clamp(2.4rem, 6vw, 4.5rem); line-height: .96; letter-spacing: -.06em; }
+.contact-modal-heading h2 em { display: block; color: var(--blue); }
+.contact-modal-heading > p:last-child { max-width: 36rem; margin: 0; color: var(--muted); line-height: 1.65; }
+.contact-form { display: grid; grid-template-columns: 1fr 1fr; gap: 1.1rem; margin-top: 2.25rem; }
+.contact-field { display: grid; gap: .5rem; }
+.contact-field--wide { grid-column: 1 / -1; }
+.contact-field > span { color: var(--ink); font-size: .66rem; font-weight: 760; letter-spacing: .1em; text-transform: uppercase; }
+.contact-field input, .contact-field select, .contact-field textarea { width: 100%; border: 1px solid var(--ink); border-radius: .45rem; background: var(--white); color: var(--ink); }
+.contact-field input, .contact-field select { min-height: 3.4rem; padding: 0 .9rem; }
+.contact-field textarea { padding: .9rem; line-height: 1.55; resize: vertical; }
+.contact-field input::placeholder, .contact-field textarea::placeholder { color: #858a87; }
+.contact-form-actions { grid-column: 1 / -1; display: flex; align-items: center; gap: 1.2rem; margin-top: .5rem; }
+.contact-cancel { border: 0; background: transparent; color: var(--muted); text-decoration: underline; text-underline-offset: .25rem; cursor: pointer; }
 .donation-section { background: var(--blue-dark); color: var(--white); }
 .donation-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6rem; align-items: center; }
 .donation-section h2 em { color: var(--lime); }
@@ -507,6 +527,13 @@ a:focus-visible {
   .ways-grid { grid-template-columns: 1fr; }
   .ways-grid article { min-height: 15rem; }
   .ways-grid h2 { margin-top: 2rem; }
+  .contact-modal { max-height: calc(100vh - 1rem); }
+  .contact-modal-inner { padding: 4.5rem 1.25rem 1.5rem; }
+  .contact-modal-heading { padding-right: 0; }
+  .contact-form { grid-template-columns: 1fr; }
+  .contact-field--wide { grid-column: auto; }
+  .contact-form-actions { grid-column: auto; align-items: stretch; flex-direction: column; }
+  .contact-form-actions .button { width: 100%; }
 }
 
 @media (max-width: 480px) {

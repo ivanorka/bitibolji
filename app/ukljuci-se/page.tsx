@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ContactModal } from "@/components/ContactModal";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 
@@ -42,10 +43,10 @@ export default function JoinPage() {
               <p>Javi se izravno. Najbolje suradnje često počinju kratkom porukom i konkretnim prijedlogom.</p>
             </div>
             <div className="contact-card">
-              <div><span>E-pošta</span><a href="mailto:bitibolji4@gmail.com">bitibolji4@gmail.com</a></div>
+              <div><span>Kontakt</span><strong>Pošalji Vladi kratku poruku</strong></div>
               <div><span>Telefon</span><a href="tel:+385917675999">+385 91 767 5999</a></div>
               <div><span>Adresa</span><strong>Stonska 14, Osijek</strong></div>
-              <a className="button button--dark contact-button" href="mailto:bitibolji4@gmail.com?subject=Želim se uključiti u Biti Bolji">Pošalji poruku <span>→</span></a>
+              <ContactModal />
             </div>
           </div>
         </section>
@@ -66,4 +67,3 @@ export default function JoinPage() {
     </>
   );
 }
-
