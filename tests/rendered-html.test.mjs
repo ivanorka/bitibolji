@@ -46,6 +46,7 @@ test("contact page renders an email-free contact modal", async () => {
   assert.equal(response.status, 200);
 
   const html = await response.text();
+  assert.match(html, /favicon\.svg/);
   assert.match(html, /Pošalji email poruku/);
   assert.match(html, /Ne trebaš upisivati svoju e-mail adresu/);
   assert.match(html, /Ime i prezime/);

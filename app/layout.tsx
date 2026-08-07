@@ -30,6 +30,10 @@ export async function generateMetadata(): Promise<Metadata> {
       "Znanje, iskustvo i stvarne prilike za mlade — projekt Vladimira Mihajlovića i Udruge Biti Bolji iz Osijeka.",
     keywords: ["Biti bolji", "Vladimir Mihajlović", "mladi", "poduzetništvo", "Osijek", "obrazovanje"],
     authors: [{ name: "Vladimir Mihajlović" }],
+    icons: {
+      icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
+      shortcut: "/favicon.svg",
+    },
     openGraph: {
       type: "website",
       locale: "hr_HR",
