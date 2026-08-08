@@ -1,6 +1,7 @@
 import { getArticle, getEnglishArticle } from "@/lib/articles";
 import {
   getArticleAudioChunks,
+  getArticleAudioNarrationMode,
   getArticleAudioVersion,
   getElevenLabsVoiceId,
   getElevenLabsVoiceSettings,
@@ -39,8 +40,10 @@ export async function GET(request: Request, { params }: RouteContext) {
     return jsonResponse({
       provider: "elevenlabs",
       model: process.env.ELEVENLABS_MODEL_ID || "eleven_multilingual_v2",
+      narration: getArticleAudioNarrationMode(article, locale),
       ready: isElevenLabsAudioReady(),
       parts: chunks.length,
+      characters: chunks.reduce((total, chunk) => total + chunk.length, 0),
       version,
     });
   }
@@ -77,7 +80,8 @@ export async function GET(request: Request, { params }: RouteContext) {
       model_id: modelId,
       previous_text: part > 0 ? chunks[part - 1].slice(-700) : undefined,
       next_text: part + 1 < chunks.length ? chunks[part + 1].slice(0, 700) : undefined,
-      voice_settings: getElevenLabsVoiceSettings(profile),
+      voice_settings: getElevenLabsVoiceSettings(),
+      apply_text_normalization: "on",
     }),
   });
 

@@ -1,6 +1,6 @@
 export type AudioTextLocale = "hr" | "en";
 
-export const AUDIO_TEXT_NORMALIZATION_VERSION = "abbreviations-v1";
+export const AUDIO_TEXT_NORMALIZATION_VERSION = "spoken-editorial-v2";
 
 type SpeechReplacement = readonly [pattern: RegExp, replacement: string];
 
@@ -8,8 +8,14 @@ const corporateSuffix = /(?:,\s*)?(?:j\.\s*d\.\s*o\.\s*o\.|d\.\s*o\.\s*o\.|d\.\s
 const ibanWithAccount = /\bIBAN\s*:?[\s\u00a0]*[A-Z]{2}[\s\u00a0]*\d(?:[\d\s\u00a0]{10,32})\b/giu;
 const contentBlock = /<(blockquote|cite|p|li|tr|td|pre)\b[^>]*>[\s\S]*?<\/\1>/giu;
 const paymentDetailsMarker = /\b(?:IBAN|SWIFT|BIC|poziv\s+na\s+broj|model\s+plaćanja|payment\s+reference|account\s+number)\b/iu;
+const figcaptionBlock = /<figcaption\b[^>]*>[\s\S]*?<\/figcaption>/giu;
+const narrativeBlock = /<(p|li|cite|address)\b[^>]*>[\s\S]*?<\/\1>/giu;
+const contactDetailsMarker = /(?:mailto:|tel:|\b[\w.+-]+@[\w.-]+\.[\p{L}]{2,}\b|\b(?:kontakt|contact)\s*:?\s*\+?\d)/iu;
+const photoCreditMarker = /^\s*(?:<[^>]+>\s*)*(?:foto|photo|fotografija|snimio|snimila)\s*:/iu;
+const supportCallMarker = /\b(?:projekt\s+možete\s+podržati|pozivamo\s+(?:i\s+)?vas\s+da[^.!?]{0,120}\bpodržite|donirajte\s+(?:projektu|udruzi)|support\s+this\s+project)\b/iu;
 
 const croatianReplacements: SpeechReplacement[] = [
+  [/\b1000\s+ideja\b/giu, "tisuću ideja"],
   [/\bord\.\s*prof\.\s*dr\.\s*art\./giu, "redoviti profesor doktor umjetnosti"],
   [/\bred\.\s*prof\.\s*dr\.\s*art\./giu, "redoviti profesor doktor umjetnosti"],
   [/\bizv\.\s*prof\.\s*dr\.\s*sc\./giu, "izvanredni profesor doktor znanosti"],
@@ -63,34 +69,38 @@ const englishReplacements: SpeechReplacement[] = [
 
 const croatianTerms: Record<string, string> = {
   AI: "umjetna inteligencija",
-  BICRO: "B I C R O",
-  EBRD: "E B R D",
-  EU: "E U",
-  FAZOS: "F A Z O S",
-  FER: "F E R",
-  FSB: "F S B",
-  HAMAG: "H A M A G",
-  HANFA: "H A N F A",
-  HGK: "H G K",
-  HNB: "H N B",
-  HNK: "H N K",
-  HRT: "H R T",
-  HT: "H T",
+  BICRO: "Bikro",
+  BOSQAR: "Boskar",
+  EBRD: "e be er de",
+  EU: "e u",
+  FAZOS: "Fazos",
+  FER: "Fer",
+  FSB: "ef es be",
+  HAMAG: "Hamag",
+  HANFA: "Hanfa",
+  HGK: "ha ge ka",
+  HNB: "ha en be",
+  HNK: "ha en ka",
+  HRT: "ha er te",
+  HT: "ha te",
   INA: "Ina",
   IT: "informacijske tehnologije",
-  MBA: "M B A",
-  OPG: "O P G",
-  OTP: "O T P",
+  MBA: "em be a",
+  OPG: "o pe ge",
+  OTP: "o te pe",
   OŠ: "Osnovna škola",
-  PBZ: "P B Z",
-  PMF: "P M F",
-  RH: "R H",
-  SAD: "S A D",
+  PBZ: "pe be ze",
+  PMF: "pe em ef",
+  RH: "er ha",
+  SAD: "Sjedinjene Američke Države",
   SŠ: "Srednja škola",
   STEM: "stem",
   TV: "televizija",
-  UK: "U K",
-  UX: "U X",
+  UK: "Ujedinjeno Kraljevstvo",
+  UX: "ju eks",
+  SWOT: "svot",
+  "3D": "tri de",
+  "4P": "četiri pe",
 };
 
 const englishTerms: Record<string, string> = {
@@ -122,6 +132,19 @@ function replaceTerms(value: string, terms: Record<string, string>) {
 
 export function stripPaymentDetailsBlocks(value: string) {
   return value.replace(contentBlock, (block) => paymentDetailsMarker.test(block) ? " " : block);
+}
+
+export function stripNonNarrativeBlocks(value: string) {
+  return stripPaymentDetailsBlocks(value)
+    .replace(figcaptionBlock, " ")
+    .replace(narrativeBlock, (block) => {
+      const plainText = block.replace(/<[^>]+>/gu, " ").replace(/\s+/gu, " ").trim();
+      return contactDetailsMarker.test(block)
+        || photoCreditMarker.test(plainText)
+        || supportCallMarker.test(plainText)
+        ? " "
+        : block;
+    });
 }
 
 export function normalizeArticleSpeechText(value: string, locale: AudioTextLocale) {

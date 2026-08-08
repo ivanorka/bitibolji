@@ -116,7 +116,16 @@ test("ElevenLabs audio endpoint validates voices and plans long articles", async
   assert.equal(metadata.provider, "elevenlabs");
   assert.equal(metadata.model, "eleven_multilingual_v2");
   assert.ok(metadata.parts > 1);
+  assert.equal(metadata.narration, "automatic");
+  assert.ok(metadata.characters > 8_500);
   assert.match(metadata.version, /^[a-f0-9]{16}$/);
+
+  const curatedMetadataResponse = await render("/api/audio/hr/stjepan-oreskovic-znanje-mladi?voice=vlado&meta=1");
+  assert.equal(curatedMetadataResponse.status, 200);
+  const curatedMetadata = await curatedMetadataResponse.json();
+  assert.equal(curatedMetadata.narration, "curated");
+  assert.equal(curatedMetadata.parts, 1);
+  assert.ok(curatedMetadata.characters > 700);
 
   const staleVersionResponse = await render(`/api/audio/hr/${slug}?voice=vlado&part=0&v=stale`);
   assert.equal(staleVersionResponse.status, 409);

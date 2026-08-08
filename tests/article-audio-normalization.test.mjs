@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import { normalizeArticleSpeechText, stripPaymentDetailsBlocks } from "../lib/audio-text-normalize.ts";
+import {
+  normalizeArticleSpeechText,
+  stripNonNarrativeBlocks,
+  stripPaymentDetailsBlocks,
+} from "../lib/audio-text-normalize.ts";
 
 test("Croatian article audio expands titles and skips noisy business suffixes", () => {
   const normalized = normalizeArticleSpeechText(
@@ -13,9 +18,40 @@ test("Croatian article audio expands titles and skips noisy business suffixes", 
   assert.match(normalized, /profesor Monikom/i);
   assert.match(normalized, /magistar inženjer agronomije/i);
   assert.match(normalized, /BORDO Primo, na primjer/i);
-  assert.match(normalized, /E U projektu za P B Z/);
+  assert.match(normalized, /e u projektu za pe be ze/i);
   assert.doesNotMatch(normalized, /podaci za uplatu/i);
   assert.doesNotMatch(normalized, /\b(?:dr|sc|prof)\.|d\.o\.o\.|IBAN/iu);
+});
+
+test("article audio omits captions, contact details, photo credits, and support calls", () => {
+  const filtered = stripNonNarrativeBlocks(`
+    <p>Predstava mladima približava odgovorno upravljanje novcem.</p>
+    <figure><img src="novac.jpg"><figcaption>Predstava je održana u školskoj dvorani.</figcaption></figure>
+    <p>Foto: Iva Fotograf</p>
+    <p>Javite nam se na bitibolji4@gmail.com ili broj 091 123 4567.</p>
+    <p>Pozivamo vas da podržite ovaj projekt kako bi stigao u još škola.</p>
+    <p>Glavna poruka članka ostaje dostupna slušateljima.</p>
+  `);
+
+  assert.match(filtered, /odgovorno upravljanje novcem/);
+  assert.match(filtered, /Glavna poruka članka/);
+  assert.doesNotMatch(filtered, /figcaption|školskoj dvorani|Iva Fotograf|bitibolji4|091|podržite ovaj projekt/i);
+});
+
+test("the first ten newest Croatian articles have curated spoken scripts", async () => {
+  const articleManifest = JSON.parse(await readFile(new URL("../content/articles.json", import.meta.url), "utf8"));
+  const narrationManifest = JSON.parse(await readFile(new URL("../content/audio-narrations.json", import.meta.url), "utf8"));
+  const newestSlugs = [...articleManifest.articles]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 10)
+    .map((article) => article.slug);
+
+  assert.equal(narrationManifest.version, "curated-hr-v1");
+  assert.deepEqual(Object.keys(narrationManifest.narrations), newestSlugs);
+  for (const narration of Object.values(narrationManifest.narrations)) {
+    assert.ok(narration.length > 700);
+    assert.doesNotMatch(narration, /IBAN|SWIFT|bitibolji4@|https?:\/\/|\b\d+\b/i);
+  }
 });
 
 test("article audio omits payment-detail blocks without removing surrounding content", () => {
