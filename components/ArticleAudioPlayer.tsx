@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { type ChangeEvent, type CSSProperties, useEffect, useRef, useState } from "react";
 
 type VoiceProfile = "vlado" | "mirjana";
 
@@ -19,11 +19,20 @@ const voiceNames: Record<VoiceProfile, string> = {
   mirjana: "Mirjana",
 };
 
+function formatTime(value: number) {
+  if (!Number.isFinite(value) || value < 0) return "0:00";
+  const seconds = Math.floor(value);
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+}
+
 export function ArticleAudioPlayer({ locale = "hr", partCount, ready, slug, title, version }: PlayerProps) {
   const english = locale === "en";
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const sessionRef = useRef(0);
   const [activeProfile, setActiveProfile] = useState<VoiceProfile | null>(null);
+  const [currentPart, setCurrentPart] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
   const [loading, setLoading] = useState(false);
   const [paused, setPaused] = useState(false);
   const [status, setStatus] = useState(ready ? "" : (english ? "ElevenLabs voices are being configured." : "ElevenLabs glasovi još se konfiguriraju."));
@@ -34,7 +43,10 @@ export function ArticleAudioPlayer({ locale = "hr", partCount, ready, slug, titl
     audio.oncanplay = null;
     audio.onended = null;
     audio.onerror = null;
+    audio.ondurationchange = null;
+    audio.onloadedmetadata = null;
     audio.onplaying = null;
+    audio.ontimeupdate = null;
     audio.onwaiting = null;
     audio.pause();
     audio.removeAttribute("src");
@@ -56,6 +68,9 @@ export function ArticleAudioPlayer({ locale = "hr", partCount, ready, slug, titl
     sessionRef.current += 1;
     disposeAudio();
     setActiveProfile(null);
+    setCurrentPart(0);
+    setCurrentTime(0);
+    setDuration(0);
     setLoading(false);
     setPaused(false);
     setStatus(message);
@@ -69,6 +84,9 @@ export function ArticleAudioPlayer({ locale = "hr", partCount, ready, slug, titl
     const audio = new Audio(`/api/audio/${locale}/${encodeURIComponent(slug)}?${query}`);
     audio.preload = "auto";
     audioRef.current = audio;
+    setCurrentPart(part);
+    setCurrentTime(0);
+    setDuration(0);
     setLoading(true);
     setPaused(false);
     setStatus(english
@@ -85,6 +103,15 @@ export function ArticleAudioPlayer({ locale = "hr", partCount, ready, slug, titl
     };
     audio.onwaiting = () => {
       if (sessionRef.current === session) setLoading(true);
+    };
+    const updateDuration = () => {
+      if (sessionRef.current !== session) return;
+      setDuration(Number.isFinite(audio.duration) ? audio.duration : 0);
+    };
+    audio.onloadedmetadata = updateDuration;
+    audio.ondurationchange = updateDuration;
+    audio.ontimeupdate = () => {
+      if (sessionRef.current === session) setCurrentTime(audio.currentTime);
     };
     audio.oncanplay = () => {
       if (sessionRef.current === session && !audio.paused) setLoading(false);
@@ -142,6 +169,18 @@ export function ArticleAudioPlayer({ locale = "hr", partCount, ready, slug, titl
     playPart(profile, 0, session);
   }
 
+  function seekAudio(event: ChangeEvent<HTMLInputElement>) {
+    const audio = audioRef.current;
+    if (!audio || !Number.isFinite(duration) || duration <= 0) return;
+    const nextTime = Math.min(Math.max(Number(event.target.value), 0), duration);
+    audio.currentTime = nextTime;
+    setCurrentTime(nextTime);
+  }
+
+  const timelineProgress = duration > 0 ? Math.min((currentTime / duration) * 100, 100) : 0;
+  const timelineStyle = { "--audio-progress": `${timelineProgress}%` } as CSSProperties;
+  const timelineValue = duration > 0 ? Math.min(currentTime, duration) : 0;
+
   return (
     <div
       className="article-audio"
@@ -196,6 +235,25 @@ export function ArticleAudioPlayer({ locale = "hr", partCount, ready, slug, titl
               {english ? "Stop" : "Zaustavi"}
             </button>
           )}
+        </div>
+        <div className="article-audio-timeline">
+          <span className="article-audio-time">{formatTime(timelineValue)}</span>
+          <input
+            aria-label={english ? "Seek through article audio" : "Premotaj audio članka"}
+            aria-valuetext={`${formatTime(timelineValue)} / ${duration > 0 ? formatTime(duration) : "--:--"}${partCount > 1 ? ` · ${english ? "part" : "dio"} ${currentPart + 1}/${partCount}` : ""}`}
+            className="article-audio-range"
+            disabled={!activeProfile || duration <= 0}
+            max={Math.max(duration, 1)}
+            min="0"
+            onChange={seekAudio}
+            step="0.1"
+            style={timelineStyle}
+            type="range"
+            value={timelineValue}
+          />
+          <span className="article-audio-time article-audio-time--end">
+            {duration > 0 ? formatTime(duration) : "--:--"}
+          </span>
         </div>
         {status && <span className="article-audio-status" aria-live="polite">{status}</span>}
       </div>

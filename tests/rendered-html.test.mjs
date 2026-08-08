@@ -102,6 +102,8 @@ test("Croatian articles render both listening profiles", async () => {
   assert.match(html, /Poslušaj glas Mirjana/);
   assert.match(html, /data-audio-provider="elevenlabs"/);
   assert.match(html, /listen-speaker\.png/);
+  assert.match(html, /aria-label="Premotaj audio članka"/);
+  assert.match(html, /type="range"/);
 });
 
 test("ElevenLabs audio endpoint validates voices and plans long articles", async () => {

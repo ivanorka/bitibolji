@@ -386,6 +386,14 @@ a:focus-visible {
 .article-audio-voice-icon { width: 1.25rem; aspect-ratio: 1; display: grid; place-items: center; border-radius: 50%; background: var(--lime); color: var(--ink); font-size: .52rem; line-height: 1; }
 .article-audio-stop { padding: .35rem .25rem; border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: .65rem; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
 .article-audio-stop:hover { color: var(--ink); }
+.article-audio-timeline { display: grid; grid-template-columns: 2.3rem minmax(0, 1fr) 2.3rem; align-items: center; gap: .45rem; }
+.article-audio-time { color: var(--muted); font-size: .6rem; font-variant-numeric: tabular-nums; }
+.article-audio-time--end { text-align: right; }
+.article-audio-range { width: 100%; height: .3rem; margin: 0; appearance: none; border: 0; border-radius: 999px; outline: none; background: linear-gradient(to right, var(--blue) 0 var(--audio-progress), var(--line) var(--audio-progress) 100%); cursor: pointer; }
+.article-audio-range::-webkit-slider-thumb { width: .9rem; height: .9rem; appearance: none; border: 2px solid var(--white); border-radius: 50%; background: var(--blue); box-shadow: 0 1px 5px rgba(16, 29, 98, .3); }
+.article-audio-range::-moz-range-thumb { width: .7rem; height: .7rem; border: 2px solid var(--white); border-radius: 50%; background: var(--blue); box-shadow: 0 1px 5px rgba(16, 29, 98, .3); }
+.article-audio-range:focus-visible { outline: 2px solid var(--blue); outline-offset: 4px; }
+.article-audio-range:disabled { cursor: default; opacity: .45; }
 .article-audio-status { color: var(--muted); font-size: .62rem; line-height: 1.35; }
 .article-cover { max-width: 1120px; }
 .article-cover img { width: 100%; max-height: 46rem; object-fit: cover; border-radius: .8rem; }
