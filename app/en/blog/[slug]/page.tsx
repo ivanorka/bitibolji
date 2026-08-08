@@ -48,8 +48,8 @@ export default async function EnglishArticlePage({ params }: PageProps) {
   const article = getEnglishArticle(slug);
   if (!article) notFound();
   const related = getEnglishRelatedArticles(article);
-  const audioPartCount = getArticleAudioChunks(article).length;
-  const audioVersion = getArticleAudioVersion(article);
+  const audioPartCount = getArticleAudioChunks(article, "en").length;
+  const audioVersion = getArticleAudioVersion(article, "en");
   const audioReady = isElevenLabsAudioReady();
 
   return (

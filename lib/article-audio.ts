@@ -1,11 +1,16 @@
 import { createHash } from "node:crypto";
 
 import type { Article } from "@/lib/articles";
+import {
+  AUDIO_TEXT_NORMALIZATION_VERSION,
+  type AudioTextLocale,
+  normalizeArticleSpeechText,
+} from "@/lib/audio-text-normalize";
 
 export type AudioVoiceProfile = "vlado" | "mirjana";
 
 const MAX_CHUNK_LENGTH = 8_500;
-const AUDIO_PIPELINE_VERSION = "elevenlabs-v2";
+const AUDIO_PIPELINE_VERSION = "elevenlabs-v3";
 
 const voiceSettings = {
   vlado: { stability: 0.58, similarity_boost: 0.82, style: 0.12, use_speaker_boost: true, speed: 0.96 },
@@ -38,13 +43,13 @@ function decodeHtmlEntities(value: string) {
     .replace(/&([a-z]+);/giu, (entity, name: string) => namedEntities[name.toLocaleLowerCase()] ?? entity);
 }
 
-function articleText(article: Article) {
+function articleText(article: Article, locale: AudioTextLocale) {
   const content = article.content
     .replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/giu, " ")
     .replace(/<(?:br\s*\/?>|\/(?:p|div|h[1-6]|li|blockquote|figcaption|figure))>/giu, ". ")
     .replace(/<[^>]+>/gu, " ");
 
-  return decodeHtmlEntities(`${article.title}. ${content}`)
+  return normalizeArticleSpeechText(decodeHtmlEntities(`${article.title}. ${content}`), locale)
     .replace(/\s+([,.;:!?])/gu, "$1")
     .replace(/\.{2,}/gu, ".")
     .replace(/\s+/gu, " ")
@@ -79,14 +84,16 @@ function splitLongText(value: string, maxLength: number) {
   return chunks;
 }
 
-export function getArticleAudioChunks(article: Article) {
-  return splitLongText(articleText(article), MAX_CHUNK_LENGTH);
+export function getArticleAudioChunks(article: Article, locale: AudioTextLocale = "hr") {
+  return splitLongText(articleText(article, locale), MAX_CHUNK_LENGTH);
 }
 
-export function getArticleAudioVersion(article: Article) {
+export function getArticleAudioVersion(article: Article, locale: AudioTextLocale = "hr") {
   const fingerprint = [
     AUDIO_PIPELINE_VERSION,
-    articleText(article),
+    AUDIO_TEXT_NORMALIZATION_VERSION,
+    locale,
+    articleText(article, locale),
     process.env.ELEVENLABS_MODEL_ID || "eleven_multilingual_v2",
     process.env.ELEVENLABS_VLADO_VOICE_ID || "",
     process.env.ELEVENLABS_MIRJANA_VOICE_ID || "",

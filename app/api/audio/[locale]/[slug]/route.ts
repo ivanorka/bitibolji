@@ -33,8 +33,8 @@ export async function GET(request: Request, { params }: RouteContext) {
   const article = locale === "en" ? getEnglishArticle(slug) : getArticle(slug);
   if (!article) return jsonResponse({ error: "Article not found." }, 404);
 
-  const chunks = getArticleAudioChunks(article);
-  const version = getArticleAudioVersion(article);
+  const chunks = getArticleAudioChunks(article, locale);
+  const version = getArticleAudioVersion(article, locale);
   if (url.searchParams.get("meta") === "1") {
     return jsonResponse({
       provider: "elevenlabs",
