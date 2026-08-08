@@ -6,6 +6,8 @@ type SpeechReplacement = readonly [pattern: RegExp, replacement: string];
 
 const corporateSuffix = /(?:,\s*)?(?:j\.\s*d\.\s*o\.\s*o\.|d\.\s*o\.\s*o\.|d\.\s*d\.\s*d\.|d\.\s*d\.)/giu;
 const ibanWithAccount = /\bIBAN\s*:?[\s\u00a0]*[A-Z]{2}[\s\u00a0]*\d(?:[\d\s\u00a0]{10,32})\b/giu;
+const contentBlock = /<(blockquote|cite|p|li|tr|td|pre)\b[^>]*>[\s\S]*?<\/\1>/giu;
+const paymentDetailsMarker = /\b(?:IBAN|SWIFT|BIC|poziv\s+na\s+broj|model\s+plaćanja|payment\s+reference|account\s+number)\b/iu;
 
 const croatianReplacements: SpeechReplacement[] = [
   [/\bord\.\s*prof\.\s*dr\.\s*art\./giu, "redoviti profesor doktor umjetnosti"],
@@ -118,15 +120,17 @@ function replaceTerms(value: string, terms: Record<string, string>) {
   ), value);
 }
 
+export function stripPaymentDetailsBlocks(value: string) {
+  return value.replace(contentBlock, (block) => paymentDetailsMarker.test(block) ? " " : block);
+}
+
 export function normalizeArticleSpeechText(value: string, locale: AudioTextLocale) {
   const replacements = locale === "en" ? englishReplacements : croatianReplacements;
   const terms = locale === "en" ? englishTerms : croatianTerms;
   let normalized = value.normalize("NFC")
     .replace(/(\p{L}\.)(?=\p{Lu})/gu, "$1 ")
     .replace(/\s+([,.;:!?])/gu, "$1")
-    .replace(ibanWithAccount, locale === "en"
-      ? "payment details are shown in the article"
-      : "podaci za uplatu navedeni su u članku")
+    .replace(ibanWithAccount, "")
     .replace(corporateSuffix, "");
 
   for (const [pattern, replacement] of replacements) {

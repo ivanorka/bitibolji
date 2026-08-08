@@ -5,6 +5,7 @@ import {
   AUDIO_TEXT_NORMALIZATION_VERSION,
   type AudioTextLocale,
   normalizeArticleSpeechText,
+  stripPaymentDetailsBlocks,
 } from "@/lib/audio-text-normalize";
 
 export type AudioVoiceProfile = "vlado" | "mirjana";
@@ -44,7 +45,7 @@ function decodeHtmlEntities(value: string) {
 }
 
 function articleText(article: Article, locale: AudioTextLocale) {
-  const content = article.content
+  const content = stripPaymentDetailsBlocks(article.content)
     .replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/giu, " ")
     .replace(/<(?:br\s*\/?>|\/(?:p|div|h[1-6]|li|blockquote|figcaption|figure))>/giu, ". ")
     .replace(/<[^>]+>/gu, " ");
