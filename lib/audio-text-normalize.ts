@@ -9,10 +9,10 @@ const ibanWithAccount = /\bIBAN\s*:?[\s\u00a0]*[A-Z]{2}[\s\u00a0]*\d(?:[\d\s\u00
 const contentBlock = /<(blockquote|cite|p|li|tr|td|pre)\b[^>]*>[\s\S]*?<\/\1>/giu;
 const paymentDetailsMarker = /\b(?:IBAN|SWIFT|BIC|poziv\s+na\s+broj|model\s+plaćanja|payment\s+reference|account\s+number)\b/iu;
 const figcaptionBlock = /<figcaption\b[^>]*>[\s\S]*?<\/figcaption>/giu;
-const narrativeBlock = /<(p|li|cite|address)\b[^>]*>[\s\S]*?<\/\1>/giu;
+const narrativeBlock = /<(p|li|cite|address|h[1-6])\b[^>]*>[\s\S]*?<\/\1>/giu;
 const contactDetailsMarker = /(?:mailto:|tel:|\b[\w.+-]+@[\w.-]+\.[\p{L}]{2,}\b|\b(?:kontakt|contact)\s*:?\s*\+?\d)/iu;
 const photoCreditMarker = /^\s*(?:<[^>]+>\s*)*(?:foto|photo|fotografija|snimio|snimila)\s*:/iu;
-const supportCallMarker = /\b(?:projekt\s+možete\s+podržati|pozivamo\s+(?:i\s+)?vas\s+da[^.!?]{0,120}\bpodržite|donirajte\s+(?:projektu|udruzi)|support\s+this\s+project)\b/iu;
+const supportCallMarker = /\b(?:projekt\s+možete\s+podržati|pozivamo\s+(?:i\s+)?vas[^.!?]{0,260}\b(?:podrž|donir)\p{L}*|donirajte\s+(?:projektu|udruzi)|(?:donacij\p{L}*|sponzorstv\p{L}*)\s+možete\s+uplatiti|uplat\p{L}*\s+(?:na|za)|žiro\s+račun|vaša\s+podrška\s+nam|support\s+this\s+project)\b/iu;
 
 const croatianReplacements: SpeechReplacement[] = [
   [/\b1000\s+ideja\b/giu, "tisuću ideja"],

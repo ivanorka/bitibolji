@@ -44,6 +44,8 @@ const namedEntities: Record<string, string> = {
   rsquo: "’",
 };
 
+const croatianEditorialMarkers = /\b(?:cilj|poruk|rezultat|zaklju|važn|učenic|mlad|projekt|poduzet|iskustv|znanj|obrazov|pobjed|nagrad|istak|naglas|pokaz|uspjeh|budućnost)\p{L}*/iu;
+
 function decodeHtmlEntities(value: string) {
   return value
     .replace(/&#x([0-9a-f]+);/giu, (_, hex: string) => String.fromCodePoint(Number.parseInt(hex, 16)))
@@ -88,15 +90,120 @@ function automaticArticleBlocks(article: Article) {
   return [article.title, ...content];
 }
 
+function speechTokens(value: string) {
+  return new Set(
+    decodeHtmlEntities(value)
+      .toLocaleLowerCase("hr")
+      .match(/[\p{L}\p{N}]{4,}/gu) ?? [],
+  );
+}
+
+function hasStrongOverlap(left: string, right: string) {
+  const leftTokens = speechTokens(left);
+  const rightTokens = speechTokens(right);
+  if (leftTokens.size < 4 || rightTokens.size < 4) return false;
+
+  let shared = 0;
+  for (const token of leftTokens) {
+    if (rightTokens.has(token)) shared += 1;
+  }
+
+  return shared / Math.min(leftTokens.size, rightTokens.size) >= 0.72
+    && shared / Math.max(leftTokens.size, rightTokens.size) >= 0.55;
+}
+
+function fitWholeSentences(value: string, budget: number) {
+  if (value.length <= budget) return value;
+  const sentences = value.match(/[^.!?…]+(?:[.!?…]+["”»]?|$)/gu) ?? [value];
+  let result = "";
+
+  for (const sentence of sentences) {
+    const next = `${result} ${sentence.trim()}`.trim();
+    if (next.length > budget) break;
+    result = next;
+  }
+
+  return result.length >= 140 ? result : "";
+}
+
+function editorialCroatianArticleBlocks(article: Article) {
+  const [, ...extractedContent] = automaticArticleBlocks(article);
+  const rawContent = extractedContent.reduce<string[]>((blocks, text) => {
+    const previous = blocks.at(-1);
+    if (previous && /^[\p{Ll}]/u.test(decodeHtmlEntities(text)) && /[,;:]\s*$/u.test(decodeHtmlEntities(previous))) {
+      blocks[blocks.length - 1] = `${previous} ${text}`;
+    } else {
+      blocks.push(text);
+    }
+    return blocks;
+  }, []);
+  if (rawContent.length <= 2) return [article.title, ...rawContent];
+
+  const rawDescription = article.description.replace(/\s+/gu, " ").trim();
+  const description = /(?:\.{2,}|…)$/u.test(rawDescription)
+    || /\b(?:i|ili|o|od|do|u|na|za|koji|koja|koje|kako|da)\.?$/iu.test(rawDescription)
+    ? ""
+    : rawDescription;
+  const content = rawContent
+    .map((text, index) => ({ index, text: decodeHtmlEntities(text) }))
+    .filter(({ text }) => !(text.length < 180 && /^[\p{Ll}]/u.test(text)))
+    .filter(({ text }) => !description || !hasStrongOverlap(text, description));
+  const originalLength = content.reduce((total, block) => total + block.text.length, 0);
+  const targetLength = Math.min(
+    originalLength,
+    Math.max(850, Math.min(3_200, Math.round(originalLength * 0.5))),
+  );
+  const scored = content.map((block) => {
+    const position = block.index / Math.max(1, rawContent.length - 1);
+    let score = 1;
+    if (block.index <= 1) score += 7 - block.index;
+    if (position > 0.82) score += 3;
+    if (/[“„"].{20,}[”"]?/u.test(block.text)) score += 4;
+    if (croatianEditorialMarkers.test(block.text)) score += 2;
+    if (block.text.length >= 90 && block.text.length <= 750) score += 2;
+    if (block.text.length < 90) score += 0.5;
+    return { ...block, score };
+  }).sort((left, right) => right.score - left.score || left.index - right.index);
+
+  const selected = new Map<number, string>();
+  let selectedLength = description.length;
+
+  for (const block of scored) {
+    if (selectedLength >= targetLength) break;
+    if ([...selected.values()].some((value) => hasStrongOverlap(block.text, value))) continue;
+
+    const remaining = targetLength - selectedLength;
+    const fitted = fitWholeSentences(block.text, remaining + 140);
+    if (!fitted) continue;
+    selected.set(block.index, fitted);
+    selectedLength += fitted.length;
+  }
+
+  const selectedContent = [...selected.entries()]
+    .sort(([left], [right]) => left - right)
+    .map(([, text]) => text);
+
+  return [
+    article.title,
+    ...(description ? [description] : []),
+    ...selectedContent,
+  ];
+}
+
 export function getArticleAudioText(article: Article, locale: AudioTextLocale = "hr") {
   const curated = locale === "hr" ? curatedNarrations[article.slug] : undefined;
-  const blocks = curated ? [article.title, curated] : automaticArticleBlocks(article);
+  const blocks = curated
+    ? [article.title, curated]
+    : locale === "hr"
+      ? editorialCroatianArticleBlocks(article)
+      : automaticArticleBlocks(article);
 
   return normalizeSpeechBlocks(blocks, locale);
 }
 
 export function getArticleAudioNarrationMode(article: Article, locale: AudioTextLocale = "hr") {
-  return locale === "hr" && curatedNarrations[article.slug] ? "curated" : "automatic";
+  if (locale !== "hr") return "automatic";
+  return curatedNarrations[article.slug] ? "curated" : "editorial";
 }
 
 function splitLongText(value: string, maxLength: number) {

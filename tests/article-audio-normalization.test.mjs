@@ -30,12 +30,14 @@ test("article audio omits captions, contact details, photo credits, and support 
     <p>Foto: Iva Fotograf</p>
     <p>Javite nam se na bitibolji4@gmail.com ili broj 091 123 4567.</p>
     <p>Pozivamo vas da podržite ovaj projekt kako bi stigao u još škola.</p>
+    <p>Pozivamo vas da se pridružite kampanji i da donirate pretplatu jednoj školi.</p>
+    <h6>Foto: Marko Fotograf</h6>
     <p>Glavna poruka članka ostaje dostupna slušateljima.</p>
   `);
 
   assert.match(filtered, /odgovorno upravljanje novcem/);
   assert.match(filtered, /Glavna poruka članka/);
-  assert.doesNotMatch(filtered, /figcaption|školskoj dvorani|Iva Fotograf|bitibolji4|091|podržite ovaj projekt/i);
+  assert.doesNotMatch(filtered, /figcaption|školskoj dvorani|Iva Fotograf|Marko Fotograf|bitibolji4|091|podržite ovaj projekt|donirate pretplatu/i);
 });
 
 test("the first ten newest Croatian articles have curated spoken scripts", async () => {

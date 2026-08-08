@@ -115,9 +115,11 @@ test("ElevenLabs audio endpoint validates voices and plans long articles", async
   const metadata = await metadataResponse.json();
   assert.equal(metadata.provider, "elevenlabs");
   assert.equal(metadata.model, "eleven_multilingual_v2");
-  assert.ok(metadata.parts > 1);
-  assert.equal(metadata.narration, "automatic");
-  assert.ok(metadata.characters > 8_500);
+  assert.equal(metadata.storage, "netlify-blobs");
+  assert.equal(metadata.parts, 1);
+  assert.equal(metadata.narration, "editorial");
+  assert.ok(metadata.characters > 700);
+  assert.ok(metadata.characters < 4_000);
   assert.match(metadata.version, /^[a-f0-9]{16}$/);
 
   const curatedMetadataResponse = await render("/api/audio/hr/stjepan-oreskovic-znanje-mladi?voice=vlado&meta=1");
@@ -135,6 +137,31 @@ test("ElevenLabs audio endpoint validates voices and plans long articles", async
 
   const removedVoiceResponse = await render(`/api/audio/hr/${slug}?voice=mirjana&meta=1`);
   assert.equal(removedVoiceResponse.status, 400);
+
+  const persistenceAliasResponse = await render(`/api/audio-persist/hr/${slug}?voice=vlado&meta=1`);
+  assert.equal(persistenceAliasResponse.status, 200);
+  assert.equal((await persistenceAliasResponse.json()).version, metadata.version);
+});
+
+test("all Croatian article narrations are concise, single-part, and ready for persistent caching", async () => {
+  const manifest = JSON.parse(await readFile(new URL("../content/articles.json", import.meta.url), "utf8"));
+  let totalCharacters = 0;
+  const modes = new Map();
+
+  for (const article of manifest.articles) {
+    const response = await render(`/api/audio/hr/${article.slug}?voice=vlado&meta=1`);
+    assert.equal(response.status, 200, article.slug);
+    const metadata = await response.json();
+    assert.equal(metadata.parts, 1, article.slug);
+    assert.ok(metadata.characters >= 400, article.slug);
+    assert.ok(metadata.characters < 4_000, article.slug);
+    assert.equal(metadata.storage, "netlify-blobs");
+    totalCharacters += metadata.characters;
+    modes.set(metadata.narration, (modes.get(metadata.narration) ?? 0) + 1);
+  }
+
+  assert.deepEqual(Object.fromEntries(modes), { curated: 10, editorial: 89 });
+  assert.ok(totalCharacters < 150_000);
 });
 
 test("content migration contains every article and localizes all images", async () => {
