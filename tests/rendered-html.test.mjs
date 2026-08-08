@@ -119,7 +119,7 @@ test("ElevenLabs audio endpoint validates voices and plans long articles", async
   assert.equal(metadata.parts, 1);
   assert.equal(metadata.narration, "editorial");
   assert.ok(metadata.characters > 700);
-  assert.ok(metadata.characters < 4_000);
+  assert.ok(metadata.characters < 3_000);
   assert.match(metadata.version, /^[a-f0-9]{16}$/);
 
   const curatedMetadataResponse = await render("/api/audio/hr/stjepan-oreskovic-znanje-mladi?voice=vlado&meta=1");
@@ -154,7 +154,7 @@ test("all Croatian article narrations are concise, single-part, and ready for pe
     const metadata = await response.json();
     assert.equal(metadata.parts, 1, article.slug);
     assert.ok(metadata.characters >= 400, article.slug);
-    assert.ok(metadata.characters < 4_000, article.slug);
+    assert.ok(metadata.characters < 3_000, article.slug);
     assert.equal(metadata.storage, "netlify-blobs");
     totalCharacters += metadata.characters;
     modes.set(metadata.narration, (modes.get(metadata.narration) ?? 0) + 1);

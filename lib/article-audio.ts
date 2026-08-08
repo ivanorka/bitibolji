@@ -151,7 +151,7 @@ function editorialCroatianArticleBlocks(article: Article) {
   const originalLength = content.reduce((total, block) => total + block.text.length, 0);
   const targetLength = Math.min(
     originalLength,
-    Math.max(850, Math.min(3_200, Math.round(originalLength * 0.5))),
+    Math.max(850, Math.min(2_200, Math.round(originalLength * 0.5))),
   );
   const scored = content.map((block) => {
     const position = block.index / Math.max(1, rawContent.length - 1);
