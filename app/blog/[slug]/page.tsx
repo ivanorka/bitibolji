@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ArticleAudioPlayer } from "@/components/ArticleAudioPlayer";
 import { ArticleCard } from "@/components/ArticleCard";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -51,12 +52,15 @@ export default async function ArticlePage({ params }: PageProps) {
               <span className="article-theme article-theme--static">{getTheme(article)}</span>
               <h1>{article.title}</h1>
               <p className="article-deck">{article.description}</p>
-              <div className="article-byline">
-                <div className="byline-avatar">VM</div>
-                <div>
-                  <strong>Vladimir Mihajlović</strong>
-                  <span>{formatDate(article.date)} · {article.readTime} min čitanja</span>
+              <div className="article-meta-actions">
+                <div className="article-byline">
+                  <div className="byline-avatar">VM</div>
+                  <div>
+                    <strong>Vladimir Mihajlović</strong>
+                    <span>{formatDate(article.date)} · {article.readTime} min čitanja</span>
+                  </div>
                 </div>
+                <ArticleAudioPlayer title={article.title} />
               </div>
             </div>
           </header>

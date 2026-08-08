@@ -87,6 +87,19 @@ test("server renders fully translated English articles", async () => {
   assert.match(html, /View the original in Croatian/);
   assert.match(html, /All stories/);
   assert.match(html, /Financial literacy/);
+  assert.match(html, /Listen to article/);
+  assert.match(html, /Listen with Vlado/);
+  assert.match(html, /Listen with Mirjana/);
+});
+
+test("Croatian articles render both listening profiles", async () => {
+  const slug = "predstava-novac-nastavlja-svoj-put-prema-ucenicima-hrvatskih-skola";
+  const response = await render(`/blog/${slug}`);
+  assert.equal(response.status, 200);
+  const html = await response.text();
+  assert.match(html, /Poslušaj članak/);
+  assert.match(html, /Poslušaj glas Vlado/);
+  assert.match(html, /Poslušaj glas Mirjana/);
 });
 
 test("content migration contains every article and localizes all images", async () => {
