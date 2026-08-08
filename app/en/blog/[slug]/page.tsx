@@ -5,6 +5,7 @@ import { ArticleAudioPlayer } from "@/components/ArticleAudioPlayer";
 import { ArticleCard } from "@/components/ArticleCard";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
+import { getArticleAudioChunks, getArticleAudioVersion, isElevenLabsAudioReady } from "@/lib/article-audio";
 import {
   englishArticles,
   formatDate,
@@ -47,6 +48,9 @@ export default async function EnglishArticlePage({ params }: PageProps) {
   const article = getEnglishArticle(slug);
   if (!article) notFound();
   const related = getEnglishRelatedArticles(article);
+  const audioPartCount = getArticleAudioChunks(article).length;
+  const audioVersion = getArticleAudioVersion(article);
+  const audioReady = isElevenLabsAudioReady();
 
   return (
     <div lang="en">
@@ -67,7 +71,14 @@ export default async function EnglishArticlePage({ params }: PageProps) {
                     <span>{formatDate(article.date, "en")} · {article.readTime} min read</span>
                   </div>
                 </div>
-                <ArticleAudioPlayer locale="en" title={article.title} />
+                <ArticleAudioPlayer
+                  locale="en"
+                  partCount={audioPartCount}
+                  ready={audioReady}
+                  slug={article.slug}
+                  title={article.title}
+                  version={audioVersion}
+                />
               </div>
             </div>
           </header>

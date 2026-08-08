@@ -1,12 +1,17 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
 type VoiceProfile = "vlado" | "mirjana";
 
 type PlayerProps = {
   locale?: "hr" | "en";
+  partCount: number;
+  ready: boolean;
+  slug: string;
   title: string;
+  version: string;
 };
 
 const voiceNames: Record<VoiceProfile, string> = {
@@ -14,186 +19,186 @@ const voiceNames: Record<VoiceProfile, string> = {
   mirjana: "Mirjana",
 };
 
-function splitForSpeech(text: string, maxLength = 240) {
-  const sentences = text.match(/[^.!?…]+(?:[.!?…]+|$)/gu) ?? [text];
-  const chunks: string[] = [];
-  let current = "";
-
-  function addWords(value: string) {
-    for (const word of value.split(/\s+/u)) {
-      if (!word) continue;
-      if (current && `${current} ${word}`.length > maxLength) {
-        chunks.push(current);
-        current = word;
-      } else {
-        current = current ? `${current} ${word}` : word;
-      }
-    }
-  }
-
-  for (const sentence of sentences) {
-    const clean = sentence.trim();
-    if (!clean) continue;
-    if (clean.length > maxLength) {
-      if (current) chunks.push(current);
-      current = "";
-      addWords(clean);
-    } else if (current && `${current} ${clean}`.length > maxLength) {
-      chunks.push(current);
-      current = clean;
-    } else {
-      current = current ? `${current} ${clean}` : clean;
-    }
-  }
-
-  if (current) chunks.push(current);
-  return chunks;
-}
-
-function chooseVoice(profile: VoiceProfile, locale: "hr" | "en") {
-  const language = locale === "hr" ? "hr" : "en";
-  const voices = window.speechSynthesis.getVoices();
-  const matching = voices.filter((voice) => voice.lang.toLocaleLowerCase().startsWith(language));
-  const preferred = profile === "vlado"
-    ? /srecko|srećko|male|marko|mislav|davor|daniel|david/iu
-    : /gabrijela|lana|female|ivana|marija|samantha|victoria/iu;
-
-  return matching.find((voice) => preferred.test(voice.name))
-    ?? matching[profile === "vlado" ? 0 : Math.min(1, matching.length - 1)]
-    ?? voices.find((voice) => voice.lang.toLocaleLowerCase().startsWith(language))
-    ?? null;
-}
-
-export function ArticleAudioPlayer({ locale = "hr", title }: PlayerProps) {
+export function ArticleAudioPlayer({ locale = "hr", partCount, ready, slug, title, version }: PlayerProps) {
   const english = locale === "en";
-  const [supported, setSupported] = useState<boolean | null>(null);
-  const [activeProfile, setActiveProfile] = useState<VoiceProfile | null>(null);
-  const [paused, setPaused] = useState(false);
-  const [status, setStatus] = useState("");
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const sessionRef = useRef(0);
+  const [activeProfile, setActiveProfile] = useState<VoiceProfile | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const [status, setStatus] = useState(ready ? "" : (english ? "ElevenLabs voices are being configured." : "ElevenLabs glasovi još se konfiguriraju."));
 
-  useEffect(() => {
-    if (!("speechSynthesis" in window) || !("SpeechSynthesisUtterance" in window)) {
-      setSupported(false);
-      return;
+  function disposeAudio() {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.oncanplay = null;
+    audio.onended = null;
+    audio.onerror = null;
+    audio.onplaying = null;
+    audio.onwaiting = null;
+    audio.pause();
+    audio.removeAttribute("src");
+    audio.load();
+    audioRef.current = null;
+  }
+
+  useEffect(() => () => {
+    sessionRef.current += 1;
+    const audio = audioRef.current;
+    if (audio) {
+      audio.pause();
+      audio.removeAttribute("src");
+      audio.load();
     }
-
-    setSupported(true);
-    const speech = window.speechSynthesis;
-    const refreshVoices = () => speech.getVoices();
-    refreshVoices();
-    speech.addEventListener?.("voiceschanged", refreshVoices);
-
-    return () => {
-      sessionRef.current += 1;
-      speech.cancel();
-      speech.removeEventListener?.("voiceschanged", refreshVoices);
-    };
   }, []);
 
-  function stopReading() {
+  function resetPlayer(message: string) {
     sessionRef.current += 1;
-    window.speechSynthesis.cancel();
+    disposeAudio();
     setActiveProfile(null);
+    setLoading(false);
     setPaused(false);
-    setStatus(english ? "Reading stopped." : "Čitanje je zaustavljeno.");
+    setStatus(message);
   }
 
-  function speakChunks(chunks: string[], index: number, profile: VoiceProfile, session: number) {
-    if (sessionRef.current !== session || index >= chunks.length) {
-      if (sessionRef.current === session) {
+  function playPart(profile: VoiceProfile, part: number, session: number) {
+    if (sessionRef.current !== session) return;
+    disposeAudio();
+
+    const query = new URLSearchParams({ voice: profile, part: String(part), v: version });
+    const audio = new Audio(`/api/audio/${locale}/${encodeURIComponent(slug)}?${query}`);
+    audio.preload = "auto";
+    audioRef.current = audio;
+    setLoading(true);
+    setPaused(false);
+    setStatus(english
+      ? `${voiceNames[profile]} is preparing the article${partCount > 1 ? ` · part ${part + 1}/${partCount}` : ""}.`
+      : `${voiceNames[profile]} priprema članak${partCount > 1 ? ` · dio ${part + 1}/${partCount}` : ""}.`);
+
+    audio.onplaying = () => {
+      if (sessionRef.current !== session) return;
+      setLoading(false);
+      setPaused(false);
+      setStatus(english
+        ? `${voiceNames[profile]} is reading${partCount > 1 ? ` · part ${part + 1}/${partCount}` : ""}.`
+        : `${voiceNames[profile]} čita članak${partCount > 1 ? ` · dio ${part + 1}/${partCount}` : ""}.`);
+    };
+    audio.onwaiting = () => {
+      if (sessionRef.current === session) setLoading(true);
+    };
+    audio.oncanplay = () => {
+      if (sessionRef.current === session && !audio.paused) setLoading(false);
+    };
+    audio.onended = () => {
+      if (sessionRef.current !== session) return;
+      if (part + 1 < partCount) {
+        playPart(profile, part + 1, session);
+      } else {
+        disposeAudio();
         setActiveProfile(null);
+        setLoading(false);
         setPaused(false);
         setStatus(english ? "Article finished." : "Članak je pročitan.");
       }
-      return;
-    }
-
-    const utterance = new SpeechSynthesisUtterance(chunks[index]);
-    const voice = chooseVoice(profile, locale);
-    utterance.lang = locale === "hr" ? "hr-HR" : "en-US";
-    utterance.rate = profile === "vlado" ? 0.94 : 0.97;
-    utterance.pitch = profile === "vlado" ? 0.86 : 1.08;
-    if (voice) utterance.voice = voice;
-    utterance.onend = () => speakChunks(chunks, index + 1, profile, session);
-    utterance.onerror = (event) => {
-      if (event.error === "canceled" || event.error === "interrupted") return;
-      setActiveProfile(null);
-      setPaused(false);
-      setStatus(english ? "The article could not be played." : "Članak nije moguće reproducirati.");
     };
-    window.speechSynthesis.speak(utterance);
+    audio.onerror = () => {
+      if (sessionRef.current !== session) return;
+      resetPlayer(english
+        ? "Audio is not ready yet. Check the ElevenLabs configuration and try again."
+        : "Audio još nije spreman. Provjeri ElevenLabs postavke i pokušaj ponovno.");
+    };
+
+    void audio.play().catch(() => {
+      if (sessionRef.current !== session) return;
+      resetPlayer(english ? "Playback could not be started." : "Reprodukciju nije moguće pokrenuti.");
+    });
   }
 
   function toggleProfile(profile: VoiceProfile) {
-    if (supported !== true) return;
-    const speech = window.speechSynthesis;
+    if (!ready) {
+      setStatus(english ? "ElevenLabs voices are being configured." : "ElevenLabs glasovi još se konfiguriraju.");
+      return;
+    }
 
-    if (activeProfile === profile && speech.speaking) {
-      if (speech.paused) {
-        speech.resume();
+    const currentAudio = audioRef.current;
+    if (activeProfile === profile && currentAudio) {
+      if (loading) {
+        resetPlayer(english ? "Reading stopped." : "Čitanje je zaustavljeno.");
+      } else if (currentAudio.paused) {
+        void currentAudio.play();
         setPaused(false);
-        setStatus(english ? `${voiceNames[profile]} is reading.` : `${voiceNames[profile]} čita članak.`);
       } else {
-        speech.pause();
+        currentAudio.pause();
         setPaused(true);
         setStatus(english ? "Reading paused." : "Čitanje je pauzirano.");
       }
       return;
     }
 
-    const articleText = document.querySelector<HTMLElement>(".article-content")?.innerText
-      .replace(/\s+/gu, " ")
-      .trim();
-    if (!articleText) {
-      setStatus(english ? "Article text was not found." : "Tekst članka nije pronađen.");
-      return;
-    }
-
-    speech.cancel();
     sessionRef.current += 1;
     const session = sessionRef.current;
-    const chunks = splitForSpeech(`${title}. ${articleText}`);
+    disposeAudio();
     setActiveProfile(profile);
-    setPaused(false);
-    setStatus(english ? `${voiceNames[profile]} is reading.` : `${voiceNames[profile]} čita članak.`);
-    window.setTimeout(() => speakChunks(chunks, 0, profile, session), 0);
+    playPart(profile, 0, session);
   }
 
   return (
-    <div className="article-audio" aria-label={english ? "Listen to article" : "Poslušaj članak"}>
-      <span className="article-audio-label">{english ? "Listen" : "Poslušaj"}</span>
-      <div className="article-audio-voices">
-        {(["vlado", "mirjana"] as const).map((profile) => {
-          const active = activeProfile === profile;
-          const icon = active ? (paused ? "▶" : "❚❚") : "🔊";
-          const action = active && !paused
-            ? (english ? `Pause ${voiceNames[profile]}` : `Pauziraj glas ${voiceNames[profile]}`)
-            : (english ? `Listen with ${voiceNames[profile]}` : `Poslušaj glas ${voiceNames[profile]}`);
-
-          return (
-            <button
-              type="button"
-              className={`article-audio-voice${active ? " is-active" : ""}`}
-              aria-label={action}
-              aria-pressed={active}
-              disabled={supported === false}
-              key={profile}
-              onClick={() => toggleProfile(profile)}
-            >
-              <span aria-hidden="true">{icon}</span>
-              {voiceNames[profile]}
-            </button>
-          );
-        })}
+    <div
+      className="article-audio"
+      aria-label={`${english ? "Listen to article" : "Poslušaj članak"}: ${title}`}
+      data-audio-provider="elevenlabs"
+    >
+      <div className="article-audio-art" aria-hidden="true">
+        <Image
+          alt=""
+          height={640}
+          priority
+          src="/media/ui/listen-speaker.png"
+          width={640}
+        />
       </div>
-      {activeProfile && (
-        <button className="article-audio-stop" type="button" onClick={stopReading}>
-          {english ? "Stop" : "Zaustavi"}
-        </button>
-      )}
-      {supported === false && <span className="article-audio-status">{english ? "Audio is unavailable in this browser." : "Slušanje nije dostupno u ovom pregledniku."}</span>}
-      {supported === true && status && <span className="article-audio-status" aria-live="polite">{status}</span>}
+      <div className="article-audio-content">
+        <div className="article-audio-heading">
+          <span className="article-audio-label">{english ? "Listen to article" : "Poslušaj članak"}</span>
+          <small>{english ? "Choose a voice" : "Odaberi glas"}</small>
+        </div>
+        <div className="article-audio-controls">
+          <div className="article-audio-voices">
+            {(["vlado", "mirjana"] as const).map((profile) => {
+              const active = activeProfile === profile;
+              const icon = active ? (loading ? "…" : paused ? "▶" : "❚❚") : "▶";
+              const action = active && !paused
+                ? (english ? `Pause ${voiceNames[profile]}` : `Pauziraj glas ${voiceNames[profile]}`)
+                : (english ? `Listen with ${voiceNames[profile]}` : `Poslušaj glas ${voiceNames[profile]}`);
+
+              return (
+                <button
+                  type="button"
+                  className={`article-audio-voice${active ? " is-active" : ""}`}
+                  aria-label={action}
+                  aria-pressed={active}
+                  disabled={!ready}
+                  key={profile}
+                  onClick={() => toggleProfile(profile)}
+                >
+                  <span className="article-audio-voice-icon" aria-hidden="true">{icon}</span>
+                  {voiceNames[profile]}
+                </button>
+              );
+            })}
+          </div>
+          {activeProfile && (
+            <button
+              className="article-audio-stop"
+              type="button"
+              onClick={() => resetPlayer(english ? "Reading stopped." : "Čitanje je zaustavljeno.")}
+            >
+              {english ? "Stop" : "Zaustavi"}
+            </button>
+          )}
+        </div>
+        {status && <span className="article-audio-status" aria-live="polite">{status}</span>}
+      </div>
     </div>
   );
 }

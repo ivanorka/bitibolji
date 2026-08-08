@@ -100,6 +100,25 @@ test("Croatian articles render both listening profiles", async () => {
   assert.match(html, /Poslušaj članak/);
   assert.match(html, /Poslušaj glas Vlado/);
   assert.match(html, /Poslušaj glas Mirjana/);
+  assert.match(html, /data-audio-provider="elevenlabs"/);
+  assert.match(html, /listen-speaker\.png/);
+});
+
+test("ElevenLabs audio endpoint validates voices and plans long articles", async () => {
+  const slug = "vladimir-mihajlovic-mladi-su-ti-koji-trebaju-promijeniti-negativnu-percepciju-o-poduzetnicima";
+  const metadataResponse = await render(`/api/audio/hr/${slug}?voice=vlado&meta=1`);
+  assert.equal(metadataResponse.status, 200);
+  const metadata = await metadataResponse.json();
+  assert.equal(metadata.provider, "elevenlabs");
+  assert.equal(metadata.model, "eleven_multilingual_v2");
+  assert.ok(metadata.parts > 1);
+  assert.match(metadata.version, /^[a-f0-9]{16}$/);
+
+  const staleVersionResponse = await render(`/api/audio/hr/${slug}?voice=vlado&part=0&v=stale`);
+  assert.equal(staleVersionResponse.status, 409);
+
+  const invalidVoiceResponse = await render(`/api/audio/hr/${slug}?voice=unknown&meta=1`);
+  assert.equal(invalidVoiceResponse.status, 400);
 });
 
 test("content migration contains every article and localizes all images", async () => {

@@ -5,6 +5,7 @@ import { ArticleAudioPlayer } from "@/components/ArticleAudioPlayer";
 import { ArticleCard } from "@/components/ArticleCard";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
+import { getArticleAudioChunks, getArticleAudioVersion, isElevenLabsAudioReady } from "@/lib/article-audio";
 import { articles, formatDate, getArticle, getRelatedArticles, getTheme } from "@/lib/articles";
 
 type PageProps = { params: Promise<{ slug: string }> };
@@ -40,6 +41,9 @@ export default async function ArticlePage({ params }: PageProps) {
   const article = getArticle(slug);
   if (!article) notFound();
   const related = getRelatedArticles(article);
+  const audioPartCount = getArticleAudioChunks(article).length;
+  const audioVersion = getArticleAudioVersion(article);
+  const audioReady = isElevenLabsAudioReady();
 
   return (
     <>
@@ -60,7 +64,13 @@ export default async function ArticlePage({ params }: PageProps) {
                     <span>{formatDate(article.date)} · {article.readTime} min čitanja</span>
                   </div>
                 </div>
-                <ArticleAudioPlayer title={article.title} />
+                <ArticleAudioPlayer
+                  partCount={audioPartCount}
+                  ready={audioReady}
+                  slug={article.slug}
+                  title={article.title}
+                  version={audioVersion}
+                />
               </div>
             </div>
           </header>
