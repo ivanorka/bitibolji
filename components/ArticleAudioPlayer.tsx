@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { type ChangeEvent, type CSSProperties, useEffect, useRef, useState } from "react";
 
-type VoiceProfile = "vlado" | "mirjana";
+type VoiceProfile = "vlado";
 
 type PlayerProps = {
   locale?: "hr" | "en";
@@ -12,11 +12,6 @@ type PlayerProps = {
   slug: string;
   title: string;
   version: string;
-};
-
-const voiceNames: Record<VoiceProfile, string> = {
-  vlado: "Vlado",
-  mirjana: "Mirjana",
 };
 
 function formatTime(value: number) {
@@ -35,7 +30,7 @@ export function ArticleAudioPlayer({ locale = "hr", partCount, ready, slug, titl
   const [duration, setDuration] = useState(0);
   const [loading, setLoading] = useState(false);
   const [paused, setPaused] = useState(false);
-  const [status, setStatus] = useState(ready ? "" : (english ? "ElevenLabs voices are being configured." : "ElevenLabs glasovi još se konfiguriraju."));
+  const [status, setStatus] = useState(ready ? "" : (english ? "The ElevenLabs narrator is being configured." : "ElevenLabs narator još se konfigurira."));
 
   function disposeAudio() {
     const audio = audioRef.current;
@@ -90,16 +85,16 @@ export function ArticleAudioPlayer({ locale = "hr", partCount, ready, slug, titl
     setLoading(true);
     setPaused(false);
     setStatus(english
-      ? `${voiceNames[profile]} is preparing the article${partCount > 1 ? ` · part ${part + 1}/${partCount}` : ""}.`
-      : `${voiceNames[profile]} priprema članak${partCount > 1 ? ` · dio ${part + 1}/${partCount}` : ""}.`);
+      ? `The narrator is preparing the article${partCount > 1 ? ` · part ${part + 1}/${partCount}` : ""}.`
+      : `Narator priprema članak${partCount > 1 ? ` · dio ${part + 1}/${partCount}` : ""}.`);
 
     audio.onplaying = () => {
       if (sessionRef.current !== session) return;
       setLoading(false);
       setPaused(false);
       setStatus(english
-        ? `${voiceNames[profile]} is reading${partCount > 1 ? ` · part ${part + 1}/${partCount}` : ""}.`
-        : `${voiceNames[profile]} čita članak${partCount > 1 ? ` · dio ${part + 1}/${partCount}` : ""}.`);
+        ? `The narrator is reading${partCount > 1 ? ` · part ${part + 1}/${partCount}` : ""}.`
+        : `Narator čita članak${partCount > 1 ? ` · dio ${part + 1}/${partCount}` : ""}.`);
     };
     audio.onwaiting = () => {
       if (sessionRef.current === session) setLoading(true);
@@ -143,7 +138,7 @@ export function ArticleAudioPlayer({ locale = "hr", partCount, ready, slug, titl
 
   function toggleProfile(profile: VoiceProfile) {
     if (!ready) {
-      setStatus(english ? "ElevenLabs voices are being configured." : "ElevenLabs glasovi još se konfiguriraju.");
+      setStatus(english ? "The ElevenLabs narrator is being configured." : "ElevenLabs narator još se konfigurira.");
       return;
     }
 
@@ -180,6 +175,22 @@ export function ArticleAudioPlayer({ locale = "hr", partCount, ready, slug, titl
   const timelineProgress = duration > 0 ? Math.min((currentTime / duration) * 100, 100) : 0;
   const timelineStyle = { "--audio-progress": `${timelineProgress}%` } as CSSProperties;
   const timelineValue = duration > 0 ? Math.min(currentTime, duration) : 0;
+  const active = activeProfile === "vlado";
+  const playbackIcon = active ? (loading ? "…" : paused ? "▶" : "❚❚") : "▶";
+  const playbackLabel = active
+    ? loading
+      ? (english ? "Preparing audio" : "Priprema audija")
+      : paused
+        ? (english ? "Continue listening" : "Nastavi slušanje")
+        : (english ? "Pause" : "Pauziraj")
+    : (english ? "Play article" : "Pokreni slušanje");
+  const playbackAction = active
+    ? loading
+      ? (english ? "Stop preparing audio" : "Zaustavi pripremu audija")
+      : paused
+        ? (english ? "Continue listening" : "Nastavi slušanje")
+        : (english ? "Pause male narrator" : "Pauziraj muškog naratora")
+    : (english ? "Listen to article with male narrator" : "Poslušaj članak s muškim naratorom");
 
   return (
     <div
@@ -199,33 +210,20 @@ export function ArticleAudioPlayer({ locale = "hr", partCount, ready, slug, titl
       <div className="article-audio-content">
         <div className="article-audio-heading">
           <span className="article-audio-label">{english ? "Listen to article" : "Poslušaj članak"}</span>
-          <small>{english ? "Choose a voice" : "Odaberi glas"}</small>
+          <small>{english ? "Male narrator" : "Muški narator"}</small>
         </div>
         <div className="article-audio-controls">
-          <div className="article-audio-voices">
-            {(["vlado", "mirjana"] as const).map((profile) => {
-              const active = activeProfile === profile;
-              const icon = active ? (loading ? "…" : paused ? "▶" : "❚❚") : "▶";
-              const action = active && !paused
-                ? (english ? `Pause ${voiceNames[profile]}` : `Pauziraj glas ${voiceNames[profile]}`)
-                : (english ? `Listen with ${voiceNames[profile]}` : `Poslušaj glas ${voiceNames[profile]}`);
-
-              return (
-                <button
-                  type="button"
-                  className={`article-audio-voice${active ? " is-active" : ""}`}
-                  aria-label={action}
-                  aria-pressed={active}
-                  disabled={!ready}
-                  key={profile}
-                  onClick={() => toggleProfile(profile)}
-                >
-                  <span className="article-audio-voice-icon" aria-hidden="true">{icon}</span>
-                  {voiceNames[profile]}
-                </button>
-              );
-            })}
-          </div>
+          <button
+            type="button"
+            className={`article-audio-play${active ? " is-active" : ""}`}
+            aria-label={playbackAction}
+            aria-pressed={active}
+            disabled={!ready}
+            onClick={() => toggleProfile("vlado")}
+          >
+            <span className="article-audio-play-icon" aria-hidden="true">{playbackIcon}</span>
+            <span>{playbackLabel}</span>
+          </button>
           {activeProfile && (
             <button
               className="article-audio-stop"

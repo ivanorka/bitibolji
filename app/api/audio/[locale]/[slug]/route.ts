@@ -28,7 +28,7 @@ export async function GET(request: Request, { params }: RouteContext) {
 
   const url = new URL(request.url);
   const profile = url.searchParams.get("voice") as AudioVoiceProfile | null;
-  if (profile !== "vlado" && profile !== "mirjana") return jsonResponse({ error: "Unsupported voice." }, 400);
+  if (profile !== "vlado") return jsonResponse({ error: "Unsupported voice." }, 400);
 
   const article = locale === "en" ? getEnglishArticle(slug) : getArticle(slug);
   if (!article) return jsonResponse({ error: "Article not found." }, 404);
@@ -59,7 +59,7 @@ export async function GET(request: Request, { params }: RouteContext) {
   }
 
   const apiKey = process.env.ELEVENLABS_API_KEY;
-  const voiceId = getElevenLabsVoiceId(profile);
+  const voiceId = getElevenLabsVoiceId();
   if (!apiKey || !voiceId) return jsonResponse({ error: "ElevenLabs audio is not configured." }, 503);
 
   const modelId = process.env.ELEVENLABS_MODEL_ID || "eleven_multilingual_v2";

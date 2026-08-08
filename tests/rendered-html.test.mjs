@@ -88,18 +88,20 @@ test("server renders fully translated English articles", async () => {
   assert.match(html, /All stories/);
   assert.match(html, /Financial literacy/);
   assert.match(html, /Listen to article/);
-  assert.match(html, /Listen with Vlado/);
-  assert.match(html, /Listen with Mirjana/);
+  assert.match(html, /Listen to article with male narrator/);
+  assert.match(html, /Male narrator/);
+  assert.doesNotMatch(html, /Listen with Mirjana/);
 });
 
-test("Croatian articles render both listening profiles", async () => {
+test("Croatian articles render one male narrator", async () => {
   const slug = "predstava-novac-nastavlja-svoj-put-prema-ucenicima-hrvatskih-skola";
   const response = await render(`/blog/${slug}`);
   assert.equal(response.status, 200);
   const html = await response.text();
   assert.match(html, /Poslušaj članak/);
-  assert.match(html, /Poslušaj glas Vlado/);
-  assert.match(html, /Poslušaj glas Mirjana/);
+  assert.match(html, /Poslušaj članak s muškim naratorom/);
+  assert.match(html, /Muški narator/);
+  assert.doesNotMatch(html, /Poslušaj glas Mirjana/);
   assert.match(html, /data-audio-provider="elevenlabs"/);
   assert.match(html, /listen-speaker\.png/);
   assert.match(html, /aria-label="Premotaj audio članka"/);
@@ -121,6 +123,9 @@ test("ElevenLabs audio endpoint validates voices and plans long articles", async
 
   const invalidVoiceResponse = await render(`/api/audio/hr/${slug}?voice=unknown&meta=1`);
   assert.equal(invalidVoiceResponse.status, 400);
+
+  const removedVoiceResponse = await render(`/api/audio/hr/${slug}?voice=mirjana&meta=1`);
+  assert.equal(removedVoiceResponse.status, 400);
 });
 
 test("content migration contains every article and localizes all images", async () => {

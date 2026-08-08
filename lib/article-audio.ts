@@ -8,12 +8,13 @@ import {
   stripPaymentDetailsBlocks,
 } from "@/lib/audio-text-normalize";
 
-export type AudioVoiceProfile = "vlado" | "mirjana";
+export type AudioVoiceProfile = "vlado";
 
 const MAX_CHUNK_LENGTH = 8_500;
 const AUDIO_PIPELINE_VERSION = "elevenlabs-v3";
 
-const voiceSettings = {
+// Keep the former two-voice object in the fingerprint so male cache URLs remain valid.
+const cacheCompatibleVoiceSettings = {
   vlado: { stability: 0.58, similarity_boost: 0.82, style: 0.12, use_speaker_boost: true, speed: 0.96 },
   mirjana: { stability: 0.54, similarity_boost: 0.82, style: 0.16, use_speaker_boost: true, speed: 0.98 },
 } as const;
@@ -98,26 +99,23 @@ export function getArticleAudioVersion(article: Article, locale: AudioTextLocale
     process.env.ELEVENLABS_MODEL_ID || "eleven_multilingual_v2",
     process.env.ELEVENLABS_VLADO_VOICE_ID || "",
     process.env.ELEVENLABS_MIRJANA_VOICE_ID || "",
-    JSON.stringify(voiceSettings),
+    JSON.stringify(cacheCompatibleVoiceSettings),
   ].join("\u0000");
 
   return createHash("sha256").update(fingerprint).digest("hex").slice(0, 16);
 }
 
 export function getElevenLabsVoiceSettings(profile: AudioVoiceProfile) {
-  return voiceSettings[profile];
+  return cacheCompatibleVoiceSettings[profile];
 }
 
-export function getElevenLabsVoiceId(profile: AudioVoiceProfile) {
-  return profile === "vlado"
-    ? process.env.ELEVENLABS_VLADO_VOICE_ID
-    : process.env.ELEVENLABS_MIRJANA_VOICE_ID;
+export function getElevenLabsVoiceId() {
+  return process.env.ELEVENLABS_VLADO_VOICE_ID;
 }
 
 export function isElevenLabsAudioReady() {
   return Boolean(
     process.env.ELEVENLABS_API_KEY
     && process.env.ELEVENLABS_VLADO_VOICE_ID
-    && process.env.ELEVENLABS_MIRJANA_VOICE_ID,
   );
 }
