@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 
-const baseURL = new URL(process.argv[2] || process.env.AUDIO_BASE_URL || "https://bitibolji.orka.solutions");
+const requestedBaseURL = process.argv.slice(2).find((argument) => /^https?:\/\//u.test(argument));
+const baseURL = new URL(requestedBaseURL || process.env.AUDIO_BASE_URL || "https://bitibolji.orka.solutions");
 const manifest = JSON.parse(await readFile(new URL("../content/articles.json", import.meta.url), "utf8"));
 const operation = process.argv.includes("--verify") ? "verify" : "seed";
 const startAt = Math.max(1, Number.parseInt(process.env.AUDIO_START || "1", 10));
